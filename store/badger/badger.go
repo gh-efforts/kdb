@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-var log = logging.Logger("badger")
+var log = logging.Logger("kdb/badger")
 
 type Store struct {
 	dsn        string
@@ -268,57 +268,6 @@ func (s *Store) Prefix(ctx context.Context, prefix []byte, limit int, options ..
 	return kr
 }
 
-func (s *Store) BatchPrefix(ctx context.Context, prefixes [][]byte, limit int, options ...store.ReadOption) *store.Iterator {
-	kr := store.NewIterator(ctx)
-	log.Debugw("batch prefix scanning", "prefix_count", len(prefixes), "limit", store.Limit(limit))
-
-	go func() {
-		err := s.db.View(func(txn *badger.Txn) error {
-			badgerOptions := badgerIteratorOptions(store.Limit(limit), options)
-			it := txn.NewIterator(badgerOptions)
-			defer it.Close()
-
-			var err error
-			count := uint64(0)
-		terminateLoop:
-			for _, prefix := range prefixes {
-				for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-					count++
-
-					// We require value only when `PrefetchValues` is true, otherwise, we are performing a key-only iteration and as such,
-					// we should not fetch nor decompress actual value
-					var value []byte
-					if badgerOptions.PrefetchValues {
-						value, err = it.Item().ValueCopy(nil)
-						if err != nil {
-							return err
-						}
-					}
-
-					if !kr.PushItem(store.KV{Key: it.Item().KeyCopy(nil), Value: value}) {
-						break terminateLoop
-					}
-
-					if store.Limit(limit).Reached(count) {
-						break terminateLoop
-					}
-				}
-			}
-
-			return nil
-		})
-
-		if err != nil {
-			kr.PushError(err)
-			return
-		}
-
-		kr.PushFinished()
-	}()
-
-	return kr
-}
-
 func badgerIteratorOptions(limit store.Limit, options []store.ReadOption) badger.IteratorOptions {
 	if limit.Unbounded() && len(options) == 0 {
 		return badger.DefaultIteratorOptions
@@ -337,4 +286,11 @@ func badgerIteratorOptions(limit store.Limit, options []store.ReadOption) badger
 	}
 
 	return opts
+}
+
+func (s *Store) Delete(_ context.Context, key []byte) (err error) {
+	return s.db.Update(func(txn *badger.Txn) error {
+		err = txn.Delete(key)
+		return err
+	})
 }

@@ -71,7 +71,7 @@ func TestStore(t *testing.T) {
 
 	prefix := []byte("key")
 
-	it = st.BatchPrefix(ctx, [][]byte{prefix}, 3)
+	it = st.Prefix(ctx, prefix, 3)
 
 	var vv1 [][]byte
 	for it.Next() {

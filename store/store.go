@@ -16,7 +16,9 @@ type Store interface {
 	Scan(ctx context.Context, start, exclusiveEnd []byte, limit int, options ...ReadOption) *Iterator
 
 	Prefix(ctx context.Context, prefix []byte, limit int, options ...ReadOption) *Iterator
-	BatchPrefix(ctx context.Context, prefixes [][]byte, limit int, options ...ReadOption) *Iterator
+
+	// Delete a given key.  Returns `kdb.ErrNotFound` if not found.
+	Delete(ctx context.Context, key []byte) (err error)
 
 	BatchDelete(ctx context.Context, keys [][]byte) (err error)
 
