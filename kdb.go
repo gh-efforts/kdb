@@ -28,11 +28,6 @@ func Register(reg *Registration) {
 	registry[reg.Name] = reg
 }
 
-func isRegistered(schemeName string) bool {
-	_, isRegistered := registry[store.Name(schemeName)]
-	return isRegistered
-}
-
 func New(dsn string, opts ...store.Option) (store.Store, error) {
 	chunks := strings.Split(dsn, ":")
 	reg, found := registry[store.Name(chunks[0])]

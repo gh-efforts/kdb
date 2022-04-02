@@ -120,8 +120,9 @@ func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
 			return
 		}
 		for i, val := range res {
-			if v, ok := val.([]byte); ok {
-				dec, err := s.compression.Decompress(v)
+			switch v := val.(type) {
+			case string:
+				dec, err := s.compression.Decompress([]byte(v))
 				if err != nil {
 					kr.PushError(fmt.Errorf("decompress: %w", err))
 					return
@@ -130,7 +131,10 @@ func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
 					Key:   keys[i],
 					Value: dec,
 				})
-			} else {
+			case nil:
+				kr.PushError(store.ErrNotFound)
+				return
+			default:
 				kr.PushError(fmt.Errorf("unexpected type: %T", val))
 				return
 			}
