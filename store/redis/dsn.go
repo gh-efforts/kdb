@@ -7,7 +7,7 @@ import (
 )
 
 type dsn struct {
-	url         string
+	url         string // https://github.com/lettuce-io/lettuce-core/wiki/Redis-URI-and-connection-details
 	compression string // none, zstd
 	threshold   int    // compression threshold in bytes
 }
