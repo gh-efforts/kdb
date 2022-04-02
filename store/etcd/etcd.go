@@ -135,56 +135,56 @@ func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
 	return kr
 }
 
-func (s *Store) Scan(ctx context.Context, start, exclusiveEnd []byte, limit int, options ...store.ReadOption) *store.Iterator {
-	sit := store.NewIterator(ctx)
-	log.Debugw("scanning", "start", store.Key(start), "exclusive_end", store.Key(exclusiveEnd), "limit", store.Limit(limit))
-
-	readOptions := store.ReadOptions{}
-	for _, opt := range options {
-		opt.Apply(&readOptions)
-	}
-
-	var ops = []clientV3.OpOption{
-		clientV3.WithRange(store.Key(exclusiveEnd).String()),
-		clientV3.WithLimit(int64(limit)),
-	}
-
-	if readOptions.KeyOnly {
-		ops = append(ops, clientV3.WithKeysOnly())
-	}
-
-	go func() {
-		defer sit.PushFinished()
-		resp, err := s.db.KV.Get(ctx, store.Key(start).String(), ops...)
-		if err != nil {
-			sit.PushError(err)
-			return
-		}
-		if resp.Count == 0 {
-			sit.PushError(store.ErrNotFound)
-			return
-		}
-		for _, kv := range resp.Kvs {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			if readOptions.KeyOnly {
-				sit.PushItem(store.KV{
-					Key: kv.Key,
-				})
-			} else {
-				sit.PushItem(store.KV{
-					Key:   kv.Key,
-					Value: kv.Value,
-				})
-			}
-		}
-	}()
-
-	return sit
-}
+//func (s *Store) Scan(ctx context.Context, start, exclusiveEnd []byte, limit int, options ...store.ReadOption) *store.Iterator {
+//	sit := store.NewIterator(ctx)
+//	log.Debugw("scanning", "start", store.Key(start), "exclusive_end", store.Key(exclusiveEnd), "limit", store.Limit(limit))
+//
+//	readOptions := store.ReadOptions{}
+//	for _, opt := range options {
+//		opt.Apply(&readOptions)
+//	}
+//
+//	var ops = []clientV3.OpOption{
+//		clientV3.WithRange(store.Key(exclusiveEnd).String()),
+//		clientV3.WithLimit(int64(limit)),
+//	}
+//
+//	if readOptions.KeyOnly {
+//		ops = append(ops, clientV3.WithKeysOnly())
+//	}
+//
+//	go func() {
+//		defer sit.PushFinished()
+//		resp, err := s.db.KV.Get(ctx, store.Key(start).String(), ops...)
+//		if err != nil {
+//			sit.PushError(err)
+//			return
+//		}
+//		if resp.Count == 0 {
+//			sit.PushError(store.ErrNotFound)
+//			return
+//		}
+//		for _, kv := range resp.Kvs {
+//			select {
+//			case <-ctx.Done():
+//				return
+//			default:
+//			}
+//			if readOptions.KeyOnly {
+//				sit.PushItem(store.KV{
+//					Key: kv.Key,
+//				})
+//			} else {
+//				sit.PushItem(store.KV{
+//					Key:   kv.Key,
+//					Value: kv.Value,
+//				})
+//			}
+//		}
+//	}()
+//
+//	return sit
+//}
 
 func (s *Store) Prefix(ctx context.Context, prefix []byte, limit int, options ...store.ReadOption) *store.Iterator {
 	sit := store.NewIterator(ctx)

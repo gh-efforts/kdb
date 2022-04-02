@@ -1,7 +1,6 @@
 package badger
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/bitrainforest/kdb/store"
@@ -176,50 +175,51 @@ func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
 	return kr
 }
 
-func (s *Store) Scan(ctx context.Context, start, exclusiveEnd []byte, limit int, options ...store.ReadOption) *store.Iterator {
-	sit := store.NewIterator(ctx)
-	log.Debugw("scanning", "start", store.Key(start), "exclusive_end", store.Key(exclusiveEnd), "limit", store.Limit(limit))
-	go func() {
-		err := s.db.View(func(txn *badger.Txn) error {
-			badgerOptions := badgerIteratorOptions(store.Limit(limit), options)
-			bit := txn.NewIterator(badgerOptions)
-			defer bit.Close()
-
-			var err error
-			count := uint64(0)
-			for bit.Seek(start); bit.Valid() && bytes.Compare(bit.Item().Key(), exclusiveEnd) == -1; bit.Next() {
-				count++
-
-				// We require value only when `PrefetchValues` is true, otherwise, we are performing a key-only iteration and as such,
-				// we should not fetch nor decompress actual value
-				var value []byte
-				if badgerOptions.PrefetchValues {
-					value, err = bit.Item().ValueCopy(nil)
-					if err != nil {
-						return err
-					}
-				}
-
-				if !sit.PushItem(store.KV{Key: bit.Item().KeyCopy(nil), Value: value}) {
-					break
-				}
-
-				if store.Limit(limit).Reached(count) {
-					break
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			sit.PushError(err)
-			return
-		}
-
-		sit.PushFinished()
-	}()
-
-	return sit
-}
+//
+//func (s *Store) Scan(ctx context.Context, start, exclusiveEnd []byte, limit int, options ...store.ReadOption) *store.Iterator {
+//	sit := store.NewIterator(ctx)
+//	log.Debugw("scanning", "start", store.Key(start), "exclusive_end", store.Key(exclusiveEnd), "limit", store.Limit(limit))
+//	go func() {
+//		err := s.db.View(func(txn *badger.Txn) error {
+//			badgerOptions := badgerIteratorOptions(store.Limit(limit), options)
+//			bit := txn.NewIterator(badgerOptions)
+//			defer bit.Close()
+//
+//			var err error
+//			count := uint64(0)
+//			for bit.Seek(start); bit.Valid() && bytes.Compare(bit.Item().Key(), exclusiveEnd) == -1; bit.Next() {
+//				count++
+//
+//				// We require value only when `PrefetchValues` is true, otherwise, we are performing a key-only iteration and as such,
+//				// we should not fetch nor decompress actual value
+//				var value []byte
+//				if badgerOptions.PrefetchValues {
+//					value, err = bit.Item().ValueCopy(nil)
+//					if err != nil {
+//						return err
+//					}
+//				}
+//
+//				if !sit.PushItem(store.KV{Key: bit.Item().KeyCopy(nil), Value: value}) {
+//					break
+//				}
+//
+//				if store.Limit(limit).Reached(count) {
+//					break
+//				}
+//			}
+//			return nil
+//		})
+//		if err != nil {
+//			sit.PushError(err)
+//			return
+//		}
+//
+//		sit.PushFinished()
+//	}()
+//
+//	return sit
+//}
 
 func (s *Store) Prefix(ctx context.Context, prefix []byte, limit int, options ...store.ReadOption) *store.Iterator {
 	kr := store.NewIterator(ctx)

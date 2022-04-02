@@ -1,4 +1,4 @@
-package etcd
+package redis
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -15,42 +15,36 @@ func Test_parseDNS(t *testing.T) {
 	}{
 		{
 			name:        "simple",
-			dns:         "etcd://localhost:2379",
+			dns:         "redis://localhost:6379",
 			expectError: false,
 			expectDSN: &dsn{
-				endpoints: []string{"localhost:2379"},
+				url: "redis://localhost:6379",
 			},
 		},
 		{
 			name:        "with user password",
-			dns:         "etcd://username:password@localhost:2379",
+			dns:         "redis://username:password@localhost:6379",
 			expectError: false,
 			expectDSN: &dsn{
-				endpoints: []string{"localhost:2379"},
-				username:  "username",
-				password:  "password",
+				url: "redis://username:password@localhost:6379",
 			},
 		},
 		{
 			name:        "with compression",
-			dns:         "etcd://username:password@localhost:2379?compression=zstd&threshold=64",
+			dns:         "redis://username:password@localhost:6379?compression=zstd&threshold=64",
 			expectError: false,
 			expectDSN: &dsn{
-				endpoints:   []string{"localhost:2379"},
-				username:    "username",
-				password:    "password",
+				url:         "redis://username:password@localhost:6379",
 				compression: "zstd",
 				threshold:   64,
 			},
 		},
 		{
-			name:        "multiple endpoints",
-			dns:         "etcd://username:password@localhost:2379,localhost:2380?compression=zstd&threshold=64",
+			name:        "Standalone full",
+			dns:         "redis://username:password@localhost:6379/1?timeout=5s&compression=zstd&threshold=64",
 			expectError: false,
 			expectDSN: &dsn{
-				endpoints:   []string{"localhost:2379", "localhost:2380"},
-				username:    "username",
-				password:    "password",
+				url:         "redis://username:password@localhost:6379/1?timeout=5s",
 				compression: "zstd",
 				threshold:   64,
 			},

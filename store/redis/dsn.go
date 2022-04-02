@@ -1,38 +1,35 @@
-package etcd
+package redis
 
 import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
 type dsn struct {
-	endpoints   []string
-	username    string
-	password    string
+	url         string
 	compression string // none, zstd
 	threshold   int    // compression threshold in bytes
 }
 
 func newDSN(dsnString string) (*dsn, error) {
+
 	u, err := url.Parse(dsnString)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse etcd dsn %q: %w", dsnString, err)
+		return nil, fmt.Errorf("cannot parse redis dsn %q: %w", dsnString, err)
 	}
+
+	query := u.Query()
+
 	d := &dsn{}
 
-	d.endpoints = append(d.endpoints, strings.Split(u.Host, ",")...)
+	if query.Has("compression") {
+		d.compression = query.Get("compression")
+		query.Del("compression")
+	}
 
-	if u.User != nil {
-		d.username = u.User.Username()
-		d.password, _ = u.User.Password()
-	}
-	if u.Query().Has("compression") {
-		d.compression = u.Query().Get("compression")
-	}
-	if u.Query().Has("threshold") {
-		threshold := u.Query().Get("threshold")
+	if query.Has("threshold") {
+		threshold := query.Get("threshold")
 		if threshold == "0" {
 			d.threshold = 0
 		} else {
@@ -42,6 +39,11 @@ func newDSN(dsnString string) (*dsn, error) {
 			}
 			d.threshold = i
 		}
+		query.Del("threshold")
 	}
+
+	u.RawQuery = query.Encode()
+
+	d.url = u.String()
 	return d, nil
 }

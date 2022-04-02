@@ -13,8 +13,6 @@ type Store interface {
 	// BatchGet get a batch of keys.  Returns `kdb.ErrNotFound` the first time a key is not found: not finding a key is fatal and interrupts the result set from being fetched completely.  BatchGet guarantees that Iterator return results in the exact same order as keys
 	BatchGet(ctx context.Context, keys [][]byte) *Iterator
 
-	Scan(ctx context.Context, start, exclusiveEnd []byte, limit int, options ...ReadOption) *Iterator
-
 	Prefix(ctx context.Context, prefix []byte, limit int, options ...ReadOption) *Iterator
 
 	// Delete a given key.  Returns `kdb.ErrNotFound` if not found.
