@@ -1,6 +1,5 @@
 # kdb
 
-[![Build and test](https://github.com/bitrainforest/kdb/actions/workflows/build.yml/badge.svg)](https://github.com/bitrainforest/kdb/actions/workflows/build.yml)
 [![Lint Code Base](https://github.com/bitrainforest/kdb/actions/workflows/linter.yml/badge.svg)](https://github.com/bitrainforest/kdb/actions/workflows/linter.yml)
 
 Distributed Key/Value Store Abstraction Library written in Go. 
