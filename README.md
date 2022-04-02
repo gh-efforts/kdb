@@ -2,7 +2,7 @@
 
 [![Lint Code Base](https://github.com/bitrainforest/kdb/actions/workflows/linter.yml/badge.svg)](https://github.com/bitrainforest/kdb/actions/workflows/linter.yml)
 
-Distributed Key/Value Store Abstraction Library written in Go. 
+Distributed key-value Store Abstraction Library written in Go.
 
 Inspired by [streamingfast/kvdb](https://github.com/streamingfast/kvdb), used by [BitRainforest](https://github.com/bitrainforest).
 
