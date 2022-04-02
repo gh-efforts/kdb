@@ -60,7 +60,7 @@ func (s *Store) Put(ctx context.Context, key, value []byte) (err error) {
 	if s.writeBatch == nil {
 		s.writeBatch = s.db.TxPipeline()
 	}
-	err = s.writeBatch.Set(ctx, store.Key(key).String(), value, 0).Err()
+	err = s.writeBatch.Set(ctx, store.Key(key).String(), s.compression.Compress(value), 0).Err()
 
 	if err != nil {
 		return fmt.Errorf("set entry: %w", err)
@@ -94,7 +94,11 @@ func (s *Store) Get(ctx context.Context, key []byte) (value []byte, err error) {
 	if err != nil {
 		return nil, warpRedisError(err)
 	}
-	return val, nil
+	dec, err := s.compression.Decompress(val)
+	if err != nil {
+		return nil, fmt.Errorf("decompress: %w", err)
+	}
+	return dec, nil
 }
 
 func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
@@ -117,9 +121,14 @@ func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
 		}
 		for i, val := range res {
 			if v, ok := val.([]byte); ok {
+				dec, err := s.compression.Decompress(v)
+				if err != nil {
+					kr.PushError(fmt.Errorf("decompress: %w", err))
+					return
+				}
 				kr.PushItem(store.KV{
 					Key:   keys[i],
-					Value: v,
+					Value: dec,
 				})
 			} else {
 				kr.PushError(fmt.Errorf("unexpected type: %T", val))
@@ -148,8 +157,13 @@ func (s *Store) Prefix(ctx context.Context, prefix []byte, limit int, options ..
 				return
 			}
 			if opts.KeyOnly {
+				dec, err := s.compression.Decompress([]byte(sit.Val()))
+				if err != nil {
+					kr.PushError(fmt.Errorf("decompress: %w", err))
+					return
+				}
 				kr.PushItem(store.KV{
-					Key: []byte(sit.Val()),
+					Key: dec,
 				})
 			} else {
 				val, err := s.db.Get(ctx, sit.Val()).Bytes()
@@ -157,9 +171,14 @@ func (s *Store) Prefix(ctx context.Context, prefix []byte, limit int, options ..
 					kr.PushError(warpRedisError(err))
 					return
 				}
+				dec, err := s.compression.Decompress(val)
+				if err != nil {
+					kr.PushError(warpRedisError(err))
+					return
+				}
 				kr.PushItem(store.KV{
 					Key:   []byte(sit.Val()),
-					Value: val,
+					Value: dec,
 				})
 			}
 		}

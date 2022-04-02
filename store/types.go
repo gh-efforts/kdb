@@ -5,6 +5,15 @@ import (
 	"strconv"
 )
 
+type Name string
+
+const (
+	Badger = Name("badger")
+	Etcd   = Name("etcd")
+	Redis  = Name("redis")
+	Tikv   = Name("tikv")
+)
+
 type KV struct {
 	Key, Value []byte
 }

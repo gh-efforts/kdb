@@ -105,7 +105,8 @@ func (s *Store) Get(ctx context.Context, key []byte) (value []byte, err error) {
 			Value: pair.Value,
 		})
 	}
-	return kvs[0].Value, nil
+
+	return s.compression.Decompress(kvs[0].Value)
 }
 
 func (s *Store) BatchGet(ctx context.Context, keys [][]byte) *store.Iterator {
@@ -226,9 +227,14 @@ func (s *Store) Prefix(ctx context.Context, prefix []byte, limit int, options ..
 					Key: kv.Key,
 				})
 			} else {
+				dec, err := s.compression.Decompress(kv.Value)
+				if err != nil {
+					sit.PushError(err)
+					return
+				}
 				sit.PushItem(store.KV{
 					Key:   kv.Key,
-					Value: kv.Value,
+					Value: dec,
 				})
 			}
 		}
